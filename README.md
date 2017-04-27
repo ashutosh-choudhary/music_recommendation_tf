@@ -1,0 +1,2 @@
+Recommend music using trained RNNs on song playlists.
+SEQ2SEQ model also explored

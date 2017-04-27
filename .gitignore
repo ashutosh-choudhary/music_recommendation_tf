@@ -1,0 +1,6 @@
+.DS_Store
+pictures/
+*.pyc
+data/test-rnn-basic-seq-data.txt
+data/train-rnn-basic-seq-data.txt
+data/val-rnn-basic-seq-data.txt

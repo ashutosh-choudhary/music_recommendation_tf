@@ -42,8 +42,13 @@ def batch(inputs, max_sequence_length=None):
     return inputs_time_major, sequence_lengths
 
 def _read_words(filename):
-    with tf.gfile.GFile(filename, "r") as f:
-        w = f.read().decode("utf-8").replace("\n", " <eos> ").split(" ")
+    #with tf.gfile.GFile(filename, "r") as f:
+    #    w = f.read().decode("utf-8").replace("\n", " <eos> ").split(" ")
+    unknown = "XXXXXXXXX"
+    w = np.load(filename)
+    pos = np.where(w==unknown)
+    for p in pos:
+        w = np.insert(w, p+1, "<eos>")
     return w
 
 def _build_vocab(filename):
@@ -59,14 +64,15 @@ def _build_vocab(filename):
 
 def _file_to_word_ids(filename, word_to_id):
     data = _read_words(filename)
-    return [word_to_id[word] for word in data if word in word_to_id]+[word_to_id["<eos>"]]
+    return [word_to_id[word] for word in data if word in word_to_id]
+    #+[word_to_id["<eos>"]]
 
 
 def load_y_labels(data_path="data/"):
 
-    train_path = os.path.join(data_path, "sample_train1.txt")
-    valid_path = os.path.join(data_path, "sample_val1.txt")
-    test_path = os.path.join(data_path, "sample_test1.txt")
+    train_path = os.path.join(data_path, "train_y.txt")
+    valid_path = os.path.join(data_path, "val_y.txt")
+    test_path = os.path.join(data_path, "test_y.txt")
 
     word_to_id = _build_vocab(train_path)
     train_data = _file_to_word_ids(train_path, word_to_id)
@@ -77,6 +83,97 @@ def load_y_labels(data_path="data/"):
     valid_data_batch_ = [list(group) for k, group in groupby(train_data, lambda x: x == word_to_id['<eos>']) if not k]
     test_data_batch_ = [list(group) for k, group in groupby(train_data, lambda x: x == word_to_id['<eos>']) if not k] 
     return train_data_batch_, valid_data_batch_, test_data_batch_, vocabulary
+
+def pre_process_embeddings(data_path="data/"):
+    trainy_path = os.path.join(data_path, 'train_y.npy')    
+    word_to_id = _build_vocab(trainy_path)
+    embed_path = os.path.join(data_path, "embeddings.npy")
+    embed = np.load(embed_path)
+    embed = embed[()]
+    embedding_narr = np.array([ [0]*62 ]*len(embed.keys()))
+    # np.zeros(len(embed.keys()))
+    for key, value in embed.iteritems():
+        if key in word_to_id:
+            if len(value) == 62:
+                embedding_narr[word_to_id[key]] = value
+        
+    print("Saving embeddings array..")
+    np.save("data/embeddings_done.npy",embedding_narr)
+    print("Saved embeddings array..")
+
+def m_load_data(data_path="data/"):
+
+    trainx_path = os.path.join(data_path, "train_x.npy")
+    trainy_path = os.path.join(data_path, 'train_y.npy')
+    
+    validx_path = os.path.join(data_path, "val_x.npy")
+    validy_path = os.path.join(data_path, "val_y.npy")
+    
+    testx_path = os.path.join(data_path, "test_x.npy")
+    testy_path = os.path.join(data_path, "test_y.npy")
+    
+    # Train data prep
+    trainx = np.load(trainx_path)
+    word_to_id = _build_vocab(trainy_path)
+    trainy = _file_to_word_ids(trainy_path, word_to_id)
+    vocabulary = len(word_to_id)
+    
+    trainx_data_batch_ = []
+    last_index = 0
+    curr_index = 0
+    
+    while True:
+        try:
+            curr_index = trainy.index(word_to_id['<eos>'], last_index)
+            temp = trainx[0][last_index:curr_index]
+            trainx_data_batch_.append(temp)
+            last_index = curr_index + 1
+        except ValueError as _:
+            break
+    
+    trainy_data_batch_ = [list(group) for k, group in groupby(trainy, lambda x: x == word_to_id['<eos>']) if not k]
+    
+    # Test data prep
+    
+    testx = np.load(testx_path)
+    testy = _file_to_word_ids(testy_path, word_to_id)
+    
+    testx_data_batch_ = []
+    last_index = 0
+    curr_index = 0
+    
+    while True:
+        try:
+            curr_index = testy.index(word_to_id['<eos>'], last_index)
+            temp = testx[0][last_index:curr_index]
+            testx_data_batch_.append(temp)
+            last_index = curr_index + 1
+        except ValueError as _:
+            break
+    
+    testy_data_batch_ = [list(group) for k, group in groupby(testy, lambda x: x == word_to_id['<eos>']) if not k]
+    
+    # Validation data prep
+    
+    valx = np.load(validx_path)
+    valy = _file_to_word_ids(validy_path, word_to_id)
+    
+    valx_data_batch_ = []
+    last_index = 0
+    curr_index = 0
+    
+    while True:
+        try:
+            curr_index = valy.index(word_to_id['<eos>'], last_index)
+            temp = valx[0][last_index:curr_index]
+            valx_data_batch_.append(temp)
+            last_index = curr_index + 1
+        except ValueError as _:
+            break
+    
+    valy_data_batch_ = [list(group) for k, group in groupby(valy, lambda x: x == word_to_id['<eos>']) if not k]
+    
+    return trainx_data_batch_, trainy_data_batch_, valx_data_batch_, valy_data_batch_, testx_data_batch_, testy_data_batch_, vocabulary
     
 def read_and_load_data(batch, batch_size):
     l = len(batch)

@@ -180,49 +180,49 @@ max_batches = 3000
 batches_in_epoch = 100
 #batches_in_epoch = 2
 
-try:
-    saver = tf.train.Saver()
-    for batch in range(max_batches):
-        #print "taking next et of files....."
-        fd = next_feed()
-        #print(fd)
-        _, l = sess.run([train_op, loss], fd)
-        loss_track.append(l)
-        
-        if batch == 0 or batch % batches_in_epoch == 0:
-            print('batch {}'.format(batch))
-            print('  minibatch loss: {}'.format(sess.run(loss, fd)))
-            predict_ = sess.run(prediction, fd)
-            for i, (inp, pred) in enumerate(zip(fd[inputs].T, predict_.T)):
-                #print('  sample {}:'.format(i + 1))
-                #print('    input     > {}'.format(inp))
-                #print('    predicted > {}'.format(pred))
-                if i >= 2:
-                    break
-            #print()
-    save_path = saver.save(sess, "tmp/model.ckpt")
-    print("Model saved in file: %s" % save_path)           
-    np.save("tmp/train_loss.npy",np.asarray(loss_track),allow_pickle=True)
-    print("Losses saved")
-except Exception as e:
-    print('Training done')
-    save_path = saver.save(sess, "tmp/model.ckpt")
-    print("Model saved in file: %s" % save_path)
-    np.save("tmp/train_loss.npy",np.asarray(loss_track),allow_pickle=True)
-    print("Losses saved")
-finally:
-    print(loss_track)
+#try:
+saver = tf.train.Saver()
+for batch in range(max_batches):
+    #print "taking next et of files....."
+    fd = next_feed()
+    #print(fd)
+    _, l = sess.run([train_op, loss], fd)
+    loss_track.append(l)
+
+    if batch == 0 or batch % batches_in_epoch == 0:
+        print('batch {}'.format(batch))
+        print('  minibatch loss: {}'.format(sess.run(loss, fd)))
+        predict_ = sess.run(prediction, fd)
+        for i, (inp, pred) in enumerate(zip(fd[inputs].T, predict_.T)):
+            #print('  sample {}:'.format(i + 1))
+            #print('    input     > {}'.format(inp))
+            #print('    predicted > {}'.format(pred))
+            if i >= 2:
+                break
+                #print()
+                save_path = saver.save(sess, "tmp/model.ckpt")
+                print("Model saved in file: %s" % save_path)           
+                np.save("tmp/train_loss.npy",np.asarray(loss_track),allow_pickle=True)
+                print("Losses saved")
+#except Exception as e:
+print('Training done')
+save_path = saver.save(sess, "tmp/model.ckpt")
+print("Model saved in file: %s" % save_path)
+np.save("tmp/train_loss.npy",np.asarray(loss_track),allow_pickle=True)
+print("Losses saved")
+#finally:
+#    print(loss_track)
 
 
 # In[17]:
 
 #get_ipython().magic(u'matplotlib inline')
-import matplotlib.pyplot as plt
-plt.xlabel('Iterations')
-plt.ylabel('Cross-entropy loss')
-plt.title('Training loss sequence model')
-plt.plot(loss_track)
-plt.savefig("res/train_losses.png")
+#import matplotlib.pyplot as plt
+#plt.xlabel('Iterations')
+#plt.ylabel('Cross-entropy loss')
+#plt.title('Training loss sequence model')
+#plt.plot(loss_track)
+#plt.savefig("res/train_losses.png")
 #print('loss {:.4f} after {} examples (batch_size={})'.format(loss_track[-1], len(loss_track)*batch_size, batch_size))
 
 
